@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+.next/
+out/
+dist/
+build/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+
+# Environment & secrets — never commit real credentials
+.env
+.env.*
+!.env.example
+
+# Local deployment data
+persist/
+*.tar
+*.tar.gz
+
+# Student rosters / personal data — never commit
+Student List.*
+course_students*.csv
+student_import*.csv
+*.xlsx
+
+# Media & personal notes
+*.m4a
+*.mp3
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Claude Code local config
+.claude/
+
+# Legacy local layout (kept on disk, not part of the repository)
+/leaner/
+
+# Logs
+*.log

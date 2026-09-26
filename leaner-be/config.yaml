@@ -1,0 +1,3 @@
+verifier_args:
+  lean_version: "v4.22.0"
+  workers: 1

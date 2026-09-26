@@ -1,0 +1,91 @@
+version: "3.8"
+services:
+  pg:
+    container_name: leaner-db
+    image: ${PG_IMAGE:-leaner/postgres:17}
+    pull_policy: never
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: leaner
+    ports:
+      - 5432:5432
+    volumes:
+      - ./persist/pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d leaner"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+
+  leaner-db-bootstrap:
+    image: ${LEANER_BE_IMAGE:-leaner/leaner-be:latest}
+    pull_policy: never
+    environment:
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@pg:5432/leaner
+      DB_BOOTSTRAP_RETRIES: ${DB_BOOTSTRAP_RETRIES:-60}
+      DB_BOOTSTRAP_DELAY_SECONDS: ${DB_BOOTSTRAP_DELAY_SECONDS:-2}
+      INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL:-}
+      INITIAL_ADMIN_USERNAME: ${INITIAL_ADMIN_USERNAME:-}
+      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-}
+    depends_on:
+      pg:
+        condition: service_healthy
+    command: ["/app/scripts/bootstrap_db.sh"]
+    restart: "no"
+
+  leaner-be:
+    container_name: leaner-be
+    image: ${LEANER_BE_IMAGE:-leaner/leaner-be:latest}
+    pull_policy: never
+    ports:
+      - 7720:7720
+    environment:
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@pg:5432/leaner
+      VERIFIER_URL: http://verifier:8030
+    depends_on:
+      pg:
+        condition: service_healthy
+      leaner-db-bootstrap:
+        condition: service_completed_successfully
+
+  leaner-fe:
+    container_name: leaner-fe
+    image: ${LEANER_FE_IMAGE:-leaner/leaner-fe:latest}
+    pull_policy: never
+    # Port 3000 not exposed publicly — proxied via nginx on port 80
+    ports:
+          - 3000:3000
+    environment:
+      NEXT_PUBLIC_GRPC_SERVER_URL: http://leaner-be:7720
+      AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_TRUST_HOST: true
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+    depends_on:
+      - leaner-be
+
+  # --- Verifier: use --profile verifier to enable (requires 4+ GB RAM server) ---
+  #  On low-resource servers, skip the profile — answers will stay PENDING
+  #  and TAs can manually grade them without auto-verification.
+  verifier:
+    profiles:
+      - verifier
+    container_name: verifier
+    image: ${VERIFIER_IMAGE:-leaner/verifier:latest}
+    pull_policy: never
+    environment:
+      LEAN_VERSION: ${LEAN_VERSION:-v4.22.0}
+      WORKERS: ${WORKERS:-1}
+      REPO_URL_OR_PATH: ${REPO_URL_OR_PATH:-/opt/mathlib4}
+    ports:
+      - 8030:8030
+    # Memory limits for mathlib4 Lean REPL (adjust for your server)
+    mem_limit: ${VERIFIER_MEM_LIMIT:-2g}
+    memswap_limit: ${VERIFIER_MEMSWAP_LIMIT:-4g}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8030/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 300s

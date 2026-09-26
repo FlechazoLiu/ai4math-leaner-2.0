@@ -1,0 +1,18 @@
+version: v2
+
+managed:
+  enabled: true
+
+plugins:
+  - remote: buf.build/grpc/python:v1.65.0
+    out: ../leaner-be
+  - remote: buf.build/protocolbuffers/python:v29.3
+    out: ../leaner-be
+  - remote: buf.build/protocolbuffers/pyi:v27.2
+    out: ../leaner-be
+  - remote: buf.build/bufbuild/es:v2.12.1
+    out: ../leaner-fe/lib/gen
+    opt: target=ts
+  - remote: buf.build/connectrpc/es:v1.6.1
+    out: ../leaner-fe/lib/gen
+    opt: target=ts

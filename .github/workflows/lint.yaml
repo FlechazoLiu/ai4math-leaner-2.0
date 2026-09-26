@@ -1,0 +1,27 @@
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+jobs:
+  build:
+    permissions:
+        contents: read
+        pages: write
+        id-token: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: |
+            accept-flake-config = true
+      - uses: DeterminateSystems/flake-checker-action@main
+      - name: Checkout Project
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+          lfs: true
+      - run: |
+          nix develop --command make fmt
+      - run: |
+          nix develop --command make lint

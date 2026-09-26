@@ -1,0 +1,1448 @@
+syntax = "proto3";
+
+package leaner.v1;
+
+// User roles
+enum Role {
+  ROLE_UNSPECIFIED = 0;
+  ROLE_ADMIN = 1;
+  ROLE_TEACHER = 2;
+  ROLE_ASSISTANT = 3;
+  ROLE_STUDENT = 4;
+}
+
+// Math difficulty levels
+enum MathDifficulty {
+  MATH_DIFFICULTY_UNSPECIFIED = 0;
+  MATH_DIFFICULTY_SIMP = 1;
+  MATH_DIFFICULTY_EASY = 2;
+  MATH_DIFFICULTY_MEDIUM = 3;
+  MATH_DIFFICULTY_HARD = 4;
+  MATH_DIFFICULTY_SORRY = 5;
+}
+
+// Lean difficulty levels
+enum LeanDifficulty {
+  LEAN_DIFFICULTY_UNSPECIFIED = 0;
+  LEAN_DIFFICULTY_SIMP = 1;
+  LEAN_DIFFICULTY_EASY = 2;
+  LEAN_DIFFICULTY_MEDIUM = 3;
+  LEAN_DIFFICULTY_HARD = 4;
+  LEAN_DIFFICULTY_SORRY = 5;
+}
+
+// Grading status for filtering
+enum GradingStatusFilter {
+  GRADING_STATUS_FILTER_UNSPECIFIED = 0;
+  GRADING_STATUS_FILTER_ALL = 1;
+  GRADING_STATUS_FILTER_GRADED = 2;
+  GRADING_STATUS_FILTER_UNGRADED = 3;
+}
+
+// Answer verification status for formal answers
+enum AnswerVerificationStatus {
+  ANSWER_VERIFICATION_STATUS_UNSPECIFIED = 0;
+  ANSWER_VERIFICATION_STATUS_PENDING = 1; // Verification in progress
+  ANSWER_VERIFICATION_STATUS_SUCCESSFUL = 2; // Formal answer verified successfully
+  ANSWER_VERIFICATION_STATUS_FAILED = 3; // Formal answer verification failed
+  ANSWER_VERIFICATION_STATUS_NOT_APPLICABLE = 4; // No formal answer provided or not subject to verification
+}
+
+// User service definition
+service UserService {
+  // SignIn authenticates a user by email or student_id and returns a token
+  rpc SignIn(SignInRequest) returns (SignInResponse) {}
+  // SignUp creates a new user account (may be disabled via DISABLE_SELF_REGISTRATION)
+  rpc SignUp(SignUpRequest) returns (SignUpResponse) {}
+  // List all users
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {}
+  // Update user role
+  rpc UpdateUserRole(UpdateUserRoleRequest) returns (UpdateUserRoleResponse) {}
+  // Reset user password (admin action)
+  rpc ResetUserPassword(ResetUserPasswordRequest) returns (ResetUserPasswordResponse) {}
+  // Change password using old password (user action)
+  rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse) {}
+  // Change username (user action)
+  rpc ChangeUsername(ChangeUsernameRequest) returns (ChangeUsernameResponse) {}
+  // Create a new user (admin action)
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {}
+  // Batch create users from CSV-like data (admin action)
+  rpc BatchCreateUsers(BatchCreateUsersRequest) returns (BatchCreateUsersResponse) {}
+  // Change password on first login (must_change_password flow)
+  rpc ChangePasswordOnFirstLogin(ChangePasswordOnFirstLoginRequest) returns (ChangePasswordOnFirstLoginResponse) {}
+  // Delete a user (admin action)
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {}
+}
+
+// Question service definition
+service QuestionService {
+  // Create a new question
+  rpc CreateQuestion(CreateQuestionRequest) returns (CreateQuestionResponse) {}
+  // Get a question by ID
+  rpc GetQuestion(GetQuestionRequest) returns (GetQuestionResponse) {}
+  // Update an existing question
+  rpc UpdateQuestion(UpdateQuestionRequest) returns (UpdateQuestionResponse) {}
+  // Delete a question by ID
+  rpc DeleteQuestion(DeleteQuestionRequest) returns (DeleteQuestionResponse) {}
+  // List all questions with pagination and filtering
+  rpc ListQuestions(ListQuestionsRequest) returns (ListQuestionsResponse) {}
+}
+
+// Tag service definition
+service TagService {
+  // Create a new tag
+  rpc CreateTag(CreateTagRequest) returns (CreateTagResponse) {}
+  // Delete a tag by ID
+  rpc DeleteTag(DeleteTagRequest) returns (DeleteTagResponse) {}
+  // List all tags
+  rpc ListTags(ListTagsRequest) returns (ListTagsResponse) {}
+  // Add a tag to a question
+  rpc AddTagToQuestion(AddTagToQuestionRequest) returns (AddTagToQuestionResponse) {}
+  // Remove a tag from a question
+  rpc RemoveTagFromQuestion(RemoveTagFromQuestionRequest) returns (RemoveTagFromQuestionResponse) {}
+}
+
+// Answer service definition
+service AnswerService {
+  // Student submits an answer to a question
+  rpc SubmitAnswer(SubmitAnswerRequest) returns (SubmitAnswerResponse) {}
+  // Get a specific answer by ID
+  rpc GetAnswer(GetAnswerRequest) returns (GetAnswerResponse) {}
+  // Student updates their answer (content or visibility)
+  rpc UpdateAnswer(UpdateAnswerRequest) returns (UpdateAnswerResponse) {}
+  // List answers based on filters (e.g., for a question, by a user, public answers)
+  rpc ListAnswers(ListAnswersRequest) returns (ListAnswersResponse) {}
+  // Delete an answer by ID
+  rpc DeleteAnswer(DeleteAnswerRequest) returns (DeleteAnswerResponse) {}
+  // Teacher or Assistant grades an answer
+  rpc GradeAnswer(GradeAnswerRequest) returns (GradeAnswerResponse) {}
+}
+
+// Course service definition
+service CourseService {
+  // Create a new course
+  rpc CreateCourse(CreateCourseRequest) returns (CreateCourseResponse) {}
+  // Update a course
+  rpc UpdateCourse(UpdateCourseRequest) returns (UpdateCourseResponse) {}
+  // Delete a course
+  rpc DeleteCourse(DeleteCourseRequest) returns (DeleteCourseResponse) {}
+  // List courses
+  rpc ListCourses(ListCoursesRequest) returns (ListCoursesResponse) {}
+  // Get a course by ID
+  rpc GetCourse(GetCourseRequest) returns (GetCourseResponse) {}
+  // Check enrollment
+  rpc CheckEnrollment(CheckEnrollmentRequest) returns (CheckEnrollmentResponse) {}
+  // Enroll a user in a course
+  rpc EnrollUserInCourse(EnrollUserInCourseRequest) returns (EnrollUserInCourseResponse) {}
+  // Remove user enrollment from a course
+  rpc RemoveUserFromCourse(RemoveUserFromCourseRequest) returns (RemoveUserFromCourseResponse) {}
+  // Request to enroll in a course
+  rpc RequestToEnrollInCourse(RequestToEnrollInCourseRequest) returns (RequestToEnrollInCourseResponse) {}
+  // Request to remove enrollment request from a course
+  rpc RemoveEnrollmentRequest(RemoveEnrollmentRequestRequest) returns (RemoveEnrollmentRequestResponse) {}
+  // List enrollment requests
+  rpc ListEnrollmentRequests(ListEnrollmentRequestsRequest) returns (ListEnrollmentRequestsResponse) {}
+  // Update enrollment request status
+  rpc UpdateEnrollmentRequestStatus(UpdateEnrollmentRequestStatusRequest) returns (UpdateEnrollmentRequestStatusResponse) {}
+  // Assign a teacher to a course
+  rpc AssignTeacherToCourse(AssignTeacherToCourseRequest) returns (AssignTeacherToCourseResponse) {}
+  // Remove teacher assignment from a course
+  rpc RemoveTeacherFromCourse(RemoveTeacherFromCourseRequest) returns (RemoveTeacherFromCourseResponse) {}
+  // Assign a assistant to a course
+  rpc AssignAssistantToCourse(AssignAssistantToCourseRequest) returns (AssignAssistantToCourseResponse) {}
+  // Remove assistant assignment from a course
+  rpc RemoveAssistantFromCourse(RemoveAssistantFromCourseRequest) returns (RemoveAssistantFromCourseResponse) {}
+  // List students enrolled in a course
+  rpc ListCourseStudents(ListCourseStudentsRequest) returns (ListCourseStudentsResponse) {}
+  // List assistants assigned to a course
+  rpc ListCourseAssistants(ListCourseAssistantsRequest) returns (ListCourseAssistantsResponse) {}
+}
+
+// Assignment service definition
+service AssignmentService {
+  // Create a new assignment
+  rpc CreateAssignment(CreateAssignmentRequest) returns (CreateAssignmentResponse) {}
+  // Get an assignment by ID
+  rpc GetAssignment(GetAssignmentRequest) returns (GetAssignmentResponse) {}
+  // Update an assignment
+  rpc UpdateAssignment(UpdateAssignmentRequest) returns (UpdateAssignmentResponse) {}
+  // Delete an assignment
+  rpc DeleteAssignment(DeleteAssignmentRequest) returns (DeleteAssignmentResponse) {}
+  // List assignments
+  rpc ListAssignments(ListAssignmentsRequest) returns (ListAssignmentsResponse) {}
+  // Create an assignment question
+  rpc CreateAssignmentQuestion(CreateAssignmentQuestionRequest) returns (CreateAssignmentQuestionResponse) {}
+  // Update an assignment question
+  rpc UpdateAssignmentQuestion(UpdateAssignmentQuestionRequest) returns (UpdateAssignmentQuestionResponse) {}
+  // Delete an assignment question
+  rpc DeleteAssignmentQuestion(DeleteAssignmentQuestionRequest) returns (DeleteAssignmentQuestionResponse) {}
+  // List assignment questions
+  rpc ListAssignmentQuestions(ListAssignmentQuestionsRequest) returns (ListAssignmentQuestionsResponse) {}
+}
+
+// Assignment Answer service definition
+service AssignmentAnswerService {
+  // Student submits an answer to an assignment question
+  rpc SubmitAssignmentAnswer(SubmitAssignmentAnswerRequest) returns (SubmitAssignmentAnswerResponse) {}
+  // Get a specific assignment answer by ID
+  rpc GetAssignmentAnswer(GetAssignmentAnswerRequest) returns (GetAssignmentAnswerResponse) {}
+  // Student updates their assignment answer
+  rpc UpdateAssignmentAnswer(UpdateAssignmentAnswerRequest) returns (UpdateAssignmentAnswerResponse) {}
+  // List assignment answers
+  rpc ListAssignmentAnswers(ListAssignmentAnswersRequest) returns (ListAssignmentAnswersResponse) {}
+  // Delete an assignment answer
+  rpc DeleteAssignmentAnswer(DeleteAssignmentAnswerRequest) returns (DeleteAssignmentAnswerResponse) {}
+  // Grade an assignment answer
+  rpc GradeAssignmentAnswer(GradeAssignmentAnswerRequest) returns (GradeAssignmentAnswerResponse) {}
+  // Return an assignment answer to the student (allows resubmission)
+  rpc ReturnAssignmentAnswer(ReturnAssignmentAnswerRequest) returns (ReturnAssignmentAnswerResponse) {}
+  // Return all answers for an assignment question to all students
+  rpc BatchReturnAssignmentAnswers(BatchReturnAssignmentAnswersRequest) returns (BatchReturnAssignmentAnswersResponse) {}
+}
+
+// Post service definition
+service PostService {
+  // Create a new post
+  rpc CreatePost(CreatePostRequest) returns (CreatePostResponse) {}
+  // Update a post
+  rpc UpdatePost(UpdatePostRequest) returns (UpdatePostResponse) {}
+  // Delete a post
+  rpc DeletePost(DeletePostRequest) returns (DeletePostResponse) {}
+  // List posts
+  rpc ListPosts(ListPostsRequest) returns (ListPostsResponse) {}
+  // Get post
+  rpc GetPost(GetPostRequest) returns (GetPostResponse) {}
+}
+
+// Notification service definition
+service NotificationService {
+  // Create a new notification
+  rpc CreateNotification(CreateNotificationRequest) returns (CreateNotificationResponse) {}
+  // Update a notification
+  rpc UpdateNotification(UpdateNotificationRequest) returns (UpdateNotificationResponse) {}
+  // Delete a notification
+  rpc DeleteNotification(DeleteNotificationRequest) returns (DeleteNotificationResponse) {}
+  // List notifications
+  rpc ListNotifications(ListNotificationsRequest) returns (ListNotificationsResponse) {}
+}
+
+// Comment service definition
+service CommentService {
+  // User creates a comment on a post
+  rpc CreateComment(CreateCommentRequest) returns (CreateCommentResponse) {}
+  // User updates their own comment
+  rpc UpdateComment(UpdateCommentRequest) returns (UpdateCommentResponse) {}
+  // User deletes their own comment
+  rpc DeleteComment(DeleteCommentRequest) returns (DeleteCommentResponse) {}
+  // List comments for a post (can be nested by parent_comment_id)
+  rpc ListComments(ListCommentsRequest) returns (ListCommentsResponse) {}
+}
+
+// Resource service definition
+service ResourceService {
+  // Create a new resource
+  rpc CreateResource(CreateResourceRequest) returns (CreateResourceResponse) {}
+  // Update a resource
+  rpc UpdateResource(UpdateResourceRequest) returns (UpdateResourceResponse) {}
+  // Delete a resource
+  rpc DeleteResource(DeleteResourceRequest) returns (DeleteResourceResponse) {}
+  // List resources
+  rpc ListResources(ListResourcesRequest) returns (ListResourcesResponse) {}
+  // Get a resource by ID
+  rpc GetResource(GetResourceRequest) returns (GetResourceResponse) {}
+}
+
+// --- User Service Messages ---
+
+// Request message for user sign in
+message SignInRequest {
+  optional string email = 1;
+  string password = 2;
+  optional string student_id = 3; // Login by student_id (alternative to email)
+}
+
+// Response message for user sign in
+message SignInResponse {
+  string token = 1;
+  User user = 2;
+  bool must_change_password = 3; // If true, user must set a new password on first login
+}
+
+// Request message for user sign up
+message SignUpRequest {
+  string email = 1;
+  string password = 2;
+  string username = 3;
+}
+
+// Response message for user sign up
+message SignUpResponse {
+  User user = 1;
+}
+
+// User management requests
+message ListUsersRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  optional string username_filter = 3; // Filter users by username (e.g., prefix or contains)
+}
+
+message ListUsersResponse {
+  repeated User users = 3;
+  string next_page_token = 1;
+  int32 total_count = 2;
+}
+
+// Response message for updating user role
+message UpdateUserRoleResponse {
+  User user = 1;
+}
+
+message UpdateUserRoleRequest {
+  string user_id = 1;
+  Role role = 2;
+}
+
+message ResetUserPasswordRequest {
+  string user_id = 1;
+}
+
+// Response message for resetting user password
+message ResetUserPasswordResponse {}
+
+// Message for changing password
+message ChangePasswordRequest {
+  string email = 1;
+  string old_password = 2;
+  string new_password = 3;
+}
+
+// Response message for changing password
+message ChangePasswordResponse {}
+
+// Message for changing username
+message ChangeUsernameRequest {
+  string user_token = 1;
+  string new_username = 2;
+  string password = 3;
+}
+
+// Response message for changing username
+message ChangeUsernameResponse {}
+
+// Request message for admin creating a new user
+message CreateUserRequest {
+  string student_id = 1;
+  string display_name = 2;
+  optional string email = 3;
+  Role role = 4;               // Defaults to STUDENT if unspecified
+  string admin_token = 5;      // Admin auth token
+}
+
+// Response message for creating a user
+message CreateUserResponse {
+  User user = 1;
+}
+
+// Entry for batch user creation
+message BatchCreateUserEntry {
+  string student_id = 1;
+  string display_name = 2;
+  optional string email = 3;
+}
+
+// Request message for batch user creation
+message BatchCreateUsersRequest {
+  repeated BatchCreateUserEntry users = 1;
+  Role role = 2;               // Defaults to STUDENT if unspecified
+  string admin_token = 3;
+}
+
+// Result for a single entry in batch creation
+message BatchCreateUsersResult {
+  string student_id = 1;
+  bool success = 2;
+  string error_message = 3;
+}
+
+// Response message for batch user creation
+message BatchCreateUsersResponse {
+  repeated BatchCreateUsersResult results = 1;
+  int32 success_count = 2;
+  int32 fail_count = 3;
+}
+
+// Request message for changing password on first login
+message ChangePasswordOnFirstLoginRequest {
+  string user_token = 1;
+  string new_password = 2;
+}
+
+// Response message for changing password on first login
+message ChangePasswordOnFirstLoginResponse {}
+
+// Request message for deleting a user (admin action)
+message DeleteUserRequest {
+  string user_id = 1;
+  string admin_token = 2;
+}
+
+// Response message for deleting a user
+message DeleteUserResponse {}
+
+// User message definition
+message User {
+  string id = 1;
+  string email = 2;
+  string username = 3;
+  Role role = 4;
+  optional string course_id = 5;
+  string student_id = 6;         // Student ID number
+  optional string display_name = 7; // Display name (full name)
+  bool must_change_password = 8; // Whether user must change password on next login
+}
+
+// --- Course Service Messages ---
+
+// Course message definition
+message Course {
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  string created_at = 4;
+  string updated_at = 5;
+  repeated string instructor_names = 6; // Names of instructors teaching this course
+}
+
+// Request to create a new course
+message CreateCourseRequest {
+  string title = 1;
+  string description = 2;
+  string user_token = 3;
+}
+
+// Response for creating a new course
+message CreateCourseResponse {
+  Course course = 1;
+}
+
+// Request to update a course
+message UpdateCourseRequest {
+  string course_id = 1;
+  string user_token = 2;
+  optional string title = 3;
+  optional string description = 4;
+}
+
+// Response for updating a course
+message UpdateCourseResponse {
+  Course course = 1;
+}
+
+// Request to delete a course
+message DeleteCourseRequest {
+  string course_id = 1;
+  string user_token = 2;
+}
+
+// Response for deleting a course
+message DeleteCourseResponse {}
+
+// Request to list courses
+message ListCoursesRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  optional string user_token = 3;
+  bool is_enrolled = 4;
+  bool is_teaching = 5; // Filter for courses the user is teaching
+}
+
+// Response for listing courses
+message ListCoursesResponse {
+  repeated Course courses = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+// Request to get a course by ID
+message GetCourseRequest {
+  string course_id = 1;
+  string user_token = 2;
+}
+
+// Response for getting a course by ID
+message GetCourseResponse {
+  Course course = 1;
+}
+
+// Request to check enrollment
+message CheckEnrollmentRequest {
+  string course_id = 1;
+  string user_token = 2;
+}
+
+// Response for checking enrollment
+message CheckEnrollmentResponse {
+  bool is_enrolled = 1;
+}
+
+message EnrollmentRequest {
+  string id = 1;
+  string user_id = 2;
+  string user_name = 3;
+  string course_id = 4;
+  string course_name = 5;
+  string message = 6;
+  EnrollmentRequestStatus status = 7;
+  string created_at = 8;
+  string updated_at = 9;
+}
+
+// Request to request to enroll in a course
+message RequestToEnrollInCourseRequest {
+  string course_id = 1;
+  string user_id = 2;
+  string user_token = 3;
+  optional string message = 4;
+}
+
+// Response for requesting to enroll in a course
+message RequestToEnrollInCourseResponse {}
+
+// Request to remove enrollment request from a course
+message RemoveEnrollmentRequestRequest {
+  string enrollment_request_id = 1;
+  string user_token = 2;
+}
+
+// Response for removing enrollment request from a course
+message RemoveEnrollmentRequestResponse {}
+
+// Request to list enrollment requests
+message ListEnrollmentRequestsRequest {
+  string user_token = 1;
+  string course_id = 2;
+}
+
+// Response for listing enrollment requests
+message ListEnrollmentRequestsResponse {
+  repeated EnrollmentRequest enrollment_requests = 1;
+}
+
+enum EnrollmentRequestStatus {
+  ENROLLMENT_REQUEST_STATUS_UNSPECIFIED = 0;
+  ENROLLMENT_REQUEST_STATUS_PENDING = 1;
+  ENROLLMENT_REQUEST_STATUS_APPROVED = 2;
+  ENROLLMENT_REQUEST_STATUS_REJECTED = 3;
+}
+
+// Request to update enrollment request status
+message UpdateEnrollmentRequestStatusRequest {
+  string enrollment_request_id = 1;
+  string user_token = 2;
+  EnrollmentRequestStatus status = 3;
+}
+
+// Response for updating enrollment request status
+message UpdateEnrollmentRequestStatusResponse {}
+
+// Response for requesting to enroll in a course
+message EnrollUserInCourseRequest {
+  string course_id = 1;
+  string user_id = 2;
+  string user_token = 3;
+}
+
+// Response for enrolling a user in a course
+message EnrollUserInCourseResponse {}
+
+// Request to remove user enrollment from a course
+message RemoveUserFromCourseRequest {
+  string course_id = 1;
+  string user_id = 2;
+  string user_token = 3;
+}
+
+// Response for removing user enrollment from a course
+message RemoveUserFromCourseResponse {}
+
+// Request to assign a teacher to a course
+message AssignTeacherToCourseRequest {
+  string course_id = 1;
+  string user_id = 2;
+  string user_token = 3;
+}
+
+// Response for assigning a teacher to a course
+message AssignTeacherToCourseResponse {}
+
+// Request to remove teacher assignment from a course
+message RemoveTeacherFromCourseRequest {
+  string course_id = 1;
+  string user_id = 2;
+  string user_token = 3;
+}
+
+// Response for removing teacher assignment from a course
+message RemoveTeacherFromCourseResponse {}
+
+// Request to assign a assistant to a course
+message AssignAssistantToCourseRequest {
+  string course_id = 1;
+  string user_id = 2;
+  string user_token = 3;
+}
+
+// Response for assigning a assistant to a course
+message AssignAssistantToCourseResponse {}
+
+// Request to remove assistant assignment from a course
+message RemoveAssistantFromCourseRequest {
+  string course_id = 1;
+  string user_id = 2;
+  string user_token = 3;
+}
+
+// Response for removing assistant assignment from a course
+message RemoveAssistantFromCourseResponse {}
+
+// Request to list students enrolled in a course
+message ListCourseStudentsRequest {
+  string course_id = 1;
+  string user_token = 2;
+  int32 page_size = 3;
+  string page_token = 4;
+}
+
+// Response for listing students enrolled in a course
+message ListCourseStudentsResponse {
+  repeated User students = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+// Request to list assistants assigned to a course
+message ListCourseAssistantsRequest {
+  string course_id = 1;
+  string user_token = 2;
+  int32 page_size = 3;
+  string page_token = 4;
+}
+
+// Response for listing assistants assigned to a course
+message ListCourseAssistantsResponse {
+  repeated User assistants = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+// --- Assignment Service Messages ---
+
+// Assignment message definition
+message Assignment {
+  string id = 1;
+  string course_id = 2;
+  string title = 3;
+  optional string description = 4;
+  bool is_draft = 5;
+  string created_at = 6;
+  string updated_at = 7;
+}
+
+// Assignment Question message definition
+message AssignmentQuestion {
+  string id = 1;
+  string course_id = 2;
+  string title = 3;
+  string informal_description = 4;
+  optional string formal_description = 5;
+  string created_at = 6;
+  string updated_at = 7;
+  optional string assignment_id = 8;
+}
+
+// Request to create a new assignment
+message CreateAssignmentRequest {
+  string course_id = 1;
+  string title = 2;
+  optional string description = 3;
+  bool is_draft = 4;
+  string user_token = 5;
+}
+
+// Response for creating a new assignment
+message CreateAssignmentResponse {
+  Assignment assignment = 1;
+}
+
+// Request to get an assignment by ID
+message GetAssignmentRequest {
+  string assignment_id = 1;
+  string user_token = 2;
+}
+
+// Response for getting an assignment
+message GetAssignmentResponse {
+  Assignment assignment = 1;
+}
+
+// Request to update an assignment
+message UpdateAssignmentRequest {
+  string assignment_id = 1;
+  string user_token = 2;
+  optional string title = 3;
+  optional string description = 4;
+  optional bool is_draft = 5;
+}
+
+// Response for updating an assignment
+message UpdateAssignmentResponse {
+  Assignment assignment = 1;
+}
+
+// Request to delete an assignment
+message DeleteAssignmentRequest {
+  string assignment_id = 1;
+  string user_token = 2;
+}
+
+// Response for deleting an assignment
+message DeleteAssignmentResponse {}
+
+// Request to list assignments
+message ListAssignmentsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  optional string course_id = 3;
+  optional string user_token = 4;
+}
+
+// Response for listing assignments
+message ListAssignmentsResponse {
+  repeated Assignment assignments = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+// Request to create an assignment question
+message CreateAssignmentQuestionRequest {
+  string course_id = 1;
+  string title = 2;
+  string informal_description = 3;
+  optional string formal_description = 4;
+  optional string assignment_id = 5;
+  string user_token = 6;
+}
+
+// Response for creating an assignment question
+message CreateAssignmentQuestionResponse {
+  AssignmentQuestion question = 1;
+}
+
+// Request to update an assignment question
+message UpdateAssignmentQuestionRequest {
+  string question_id = 1;
+  string user_token = 2;
+  optional string title = 3;
+  optional string informal_description = 4;
+  optional string formal_description = 5;
+  optional string assignment_id = 6;
+}
+
+// Response for updating an assignment question
+message UpdateAssignmentQuestionResponse {
+  AssignmentQuestion question = 1;
+}
+
+// Request to delete an assignment question
+message DeleteAssignmentQuestionRequest {
+  string question_id = 1;
+  string user_token = 2;
+}
+
+// Response for deleting an assignment question
+message DeleteAssignmentQuestionResponse {}
+
+// Request to list assignment questions
+message ListAssignmentQuestionsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  optional string assignment_id = 3;
+  optional string user_token = 4;
+}
+
+// Response for listing assignment questions
+message ListAssignmentQuestionsResponse {
+  repeated AssignmentQuestion questions = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+// --- Assignment Answer Service Messages ---
+
+// Assignment Answer message definition
+message AssignmentAnswer {
+  string id = 1;
+  string assignment_question_id = 2;
+  string informal_answer = 3;
+  optional string formal_answer = 4;
+  AnswerVerificationStatus verification_status = 5;
+  bool is_draft = 6;
+  string author_id = 7;
+  string created_at = 8;
+  string updated_at = 9;
+  repeated AssignmentGrade grades = 10; // Grades for this answer
+  optional string author_name = 11; // Display name of the author
+  optional string question_title = 12; // Title of the assignment question
+}
+
+// Assignment Grade message definition
+message AssignmentGrade {
+  string id = 1;
+  string assignment_answer_id = 2;
+  int32 grade = 3;
+  string graded_by_user_id = 4;
+  string created_at = 5;
+  string updated_at = 6;
+}
+
+// Request to submit an assignment answer
+message SubmitAssignmentAnswerRequest {
+  string assignment_question_id = 1;
+  string user_token = 2;
+  string informal_answer = 3;
+  optional string formal_answer = 4;
+  bool is_draft = 5;
+}
+
+// Response for submitting an assignment answer
+message SubmitAssignmentAnswerResponse {
+  AssignmentAnswer answer = 1;
+}
+
+// Request to get an assignment answer by ID
+message GetAssignmentAnswerRequest {
+  string answer_id = 1;
+  optional string user_token = 2;
+}
+
+// Response for getting an assignment answer
+message GetAssignmentAnswerResponse {
+  AssignmentAnswer answer = 1;
+}
+
+// Request to update an assignment answer
+message UpdateAssignmentAnswerRequest {
+  string answer_id = 1;
+  string user_token = 2;
+  optional string informal_answer = 3;
+  optional string formal_answer = 4;
+  optional bool is_draft = 5;
+}
+
+// Response for updating an assignment answer
+message UpdateAssignmentAnswerResponse {
+  AssignmentAnswer answer = 1;
+}
+
+// Request to list assignment answers
+message ListAssignmentAnswersRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  string user_token = 3;
+  optional string assignment_question_id = 4;
+  optional string author_id = 5;
+  optional bool exclude_drafts = 6;
+}
+
+// Response for listing assignment answers
+message ListAssignmentAnswersResponse {
+  repeated AssignmentAnswer answers = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+// Request to delete an assignment answer
+message DeleteAssignmentAnswerRequest {
+  string answer_id = 1;
+  string user_token = 2;
+}
+
+// Response for deleting an assignment answer
+message DeleteAssignmentAnswerResponse {}
+
+// Request to grade an assignment answer
+message GradeAssignmentAnswerRequest {
+  string answer_id = 1;
+  string user_token = 2;
+  int32 grade = 3;
+}
+
+// Response for grading an assignment answer
+message GradeAssignmentAnswerResponse {
+  AssignmentGrade grade = 1;
+  AssignmentAnswer answer = 2;
+}
+
+// Request to return an assignment answer to the student (allows resubmission)
+message ReturnAssignmentAnswerRequest {
+  string answer_id = 1;
+  string user_token = 2;
+}
+
+// Response for returning an assignment answer
+message ReturnAssignmentAnswerResponse {
+  AssignmentAnswer answer = 1;
+}
+
+// Request to return all answers for an assignment question
+message BatchReturnAssignmentAnswersRequest {
+  string assignment_question_id = 1;
+  string user_token = 2;
+}
+
+// Response for batch returning assignment answers
+message BatchReturnAssignmentAnswersResponse {
+  int32 count = 1;
+}
+
+// --- Question Service Messages ---
+
+// Tag message definition
+message Tag {
+  string id = 1;
+  string name = 2;
+}
+
+// Question message definition
+message Question {
+  string id = 1;
+  string title = 2;
+  string informal_description = 3;
+  optional string formal_description = 8;
+  repeated Tag tags = 9;
+  MathDifficulty math_difficulty = 4;
+  LeanDifficulty lean_difficulty = 5;
+  string author_id = 6; // Assuming a user (e.g. teacher or admin) creates a question
+}
+
+// Request to create a new question
+message CreateQuestionRequest {
+  string title = 1;
+  string informal_description = 2;
+  optional string formal_description = 6;
+  repeated string tag_ids = 7; // IDs of existing tags to associate
+  MathDifficulty math_difficulty = 3;
+  LeanDifficulty lean_difficulty = 4;
+  string user_token = 5;
+}
+
+// Response for creating a new question
+message CreateQuestionResponse {
+  Question question = 1;
+}
+
+// Request to get a question by ID
+message GetQuestionRequest {
+  string id = 1;
+}
+
+// Response for getting a question
+message GetQuestionResponse {
+  Question question = 1;
+}
+
+// Request to update an existing question
+message UpdateQuestionRequest {
+  string id = 1;
+  string user_token = 2;
+  optional string title = 3;
+  optional string informal_description = 4;
+  optional string formal_description = 5;
+  optional MathDifficulty math_difficulty = 6;
+  optional LeanDifficulty lean_difficulty = 7;
+  repeated string tag_ids = 8; // Replace existing tags with these IDs
+}
+
+// Response for updating a question
+message UpdateQuestionResponse {
+  Question question = 1;
+}
+
+// Request to delete a question by ID
+message DeleteQuestionRequest {
+  string id = 1;
+  string user_token = 2;
+}
+
+// Response for deleting a question
+message DeleteQuestionResponse {}
+
+// Request to list questions
+message ListQuestionsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  optional string tag_name = 3;
+  optional MathDifficulty math_difficulty = 4;
+  optional LeanDifficulty lean_difficulty = 5;
+  optional string title_filter = 6;
+  optional string author_id = 7; // Filter questions by author ID
+}
+
+// Response for listing questions
+message ListQuestionsResponse {
+  repeated Question questions = 3;
+  string next_page_token = 1;
+  int32 total_count = 2;
+}
+
+// --- Tag Service Messages ---
+
+// Request to create a new tag
+message CreateTagRequest {
+  string name = 1;
+  string user_token = 2;
+}
+
+// Response for creating a new tag
+message CreateTagResponse {
+  Tag tag = 1;
+}
+
+// Request to delete a tag by ID
+message DeleteTagRequest {
+  string id = 1; // ID of the tag to delete
+  string user_token = 2;
+}
+
+// Response for deleting a tag
+message DeleteTagResponse {}
+
+// Request to list tags
+message ListTagsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  optional string name_filter = 3; // Filter tags by name (e.g., prefix or contains)
+}
+
+// Response for listing tags
+message ListTagsResponse {
+  repeated Tag tags = 3;
+  string next_page_token = 1;
+  int32 total_count = 2;
+}
+
+// Request to add a tag to a question
+message AddTagToQuestionRequest {
+  string question_id = 1;
+  string tag_id = 2;
+  string user_token = 3;
+}
+
+// Response for adding a tag to a question
+message AddTagToQuestionResponse {
+  Question question = 1; // Return the updated question
+}
+
+// Request to remove a tag from a question
+message RemoveTagFromQuestionRequest {
+  string question_id = 1;
+  string tag_id = 2;
+  string user_token = 3;
+}
+
+// Response for removing a tag from a question
+message RemoveTagFromQuestionResponse {
+  Question question = 1; // Return the updated question
+}
+
+// --- Answer Service Messages ---
+
+// Grading information for an answer
+message Grading {
+  string id = 1;
+  string answer_id = 2; // ID of the answer being graded
+  string graded_by_user_id = 3; // ID of the teacher/assistant who graded
+  string graded_by_user_name = 4; // Name of the teacher/assistant who graded
+  int32 score = 5; // Score from 0 to 100
+  string feedback_text = 6; // Textual feedback
+}
+
+// Answer message definition
+message Answer {
+  string id = 1;
+  string question_id = 2;
+  string question_title = 3;
+  string user_name = 4; // ID of the student who submitted the answer
+  AnswerVerificationStatus verification_status = 5;
+  optional string informal_answer_content = 6;
+  optional string formal_answer_content = 7;
+  optional Grading grading = 8; // Grading information, if the answer has been graded
+  bool is_draft = 9; // Whether this is a draft or official submission
+}
+
+// Request to submit an answer
+message SubmitAnswerRequest {
+  string question_id = 1;
+  string user_token = 2;
+  optional string informal_answer_content = 3;
+  optional string formal_answer_content = 4;
+  bool is_draft = 5; // Whether to submit as draft or official submission
+
+  // user_id will be derived from the authenticated user context on the server
+}
+
+// Response for submitting an answer
+message SubmitAnswerResponse {
+  Answer answer = 1;
+}
+
+// Request to get an answer by ID
+message GetAnswerRequest {
+  string answer_id = 1;
+  optional string user_token = 2; // Optional token for authenticated access to private answers
+}
+
+// Response for getting an answer
+message GetAnswerResponse {
+  Answer answer = 1;
+}
+
+// Request to update an answer
+message UpdateAnswerRequest {
+  string answer_id = 1;
+  string user_token = 2;
+  optional string informal_answer_content = 3;
+  optional string formal_answer_content = 4;
+  optional bool is_draft = 5; // Allow changing draft status
+  // Only the author of the answer can update it
+}
+
+// Response for updating an answer
+message UpdateAnswerResponse {
+  Answer answer = 1;
+}
+
+// Request to list answers
+message ListAnswersRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  string user_token = 3;
+  optional string question_title = 4;
+  optional string user_name = 5; // Filter by student who submitted
+  optional bool exclude_drafts = 6; // Exclude draft answers from results
+  optional GradingStatusFilter grading_status_filter = 7; // Filter by grading status
+}
+
+// Response for listing answers
+message ListAnswersResponse {
+  repeated Answer answers = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+// Request to delete an answer by ID
+message DeleteAnswerRequest {
+  string answer_id = 1;
+  string user_token = 2;
+}
+
+// Response for deleting an answer
+message DeleteAnswerResponse {}
+
+// Request to grade an answer
+message GradeAnswerRequest {
+  string answer_id = 1;
+  string user_token = 2;
+  int32 score = 3; // Score from 0 to 100
+  string feedback_text = 4;
+}
+
+// Response for grading an answer
+message GradeAnswerResponse {
+  Grading grading = 1;
+  Answer answer = 2; // The updated answer with grading information
+}
+
+// --- Post Service Messages ---
+
+// Post message definition
+message Post {
+  string id = 1;
+  string title = 2;
+  string content = 3;
+  string user_id = 4;
+  string user_name = 5;
+  string course_id = 6;
+  bool is_draft = 7;
+  string created_at = 8;
+  string updated_at = 9;
+}
+
+// Request to create a new post
+message CreatePostRequest {
+  string title = 1;
+  string content = 2;
+  string user_token = 3;
+  string course_id = 4;
+  optional bool is_draft = 5;
+}
+
+// Response for creating a new post
+message CreatePostResponse {
+  Post post = 1;
+}
+
+// Request to update a post
+message UpdatePostRequest {
+  string post_id = 1;
+  string user_token = 2;
+  optional string title = 3;
+  optional string content = 4;
+  optional bool is_draft = 5;
+}
+
+// Response for updating a post
+message UpdatePostResponse {
+  Post post = 1;
+}
+
+// Request to delete a post
+message DeletePostRequest {
+  string post_id = 1;
+  string user_token = 2;
+}
+
+// Response for deleting a post
+message DeletePostResponse {}
+
+// Request to list posts
+message ListPostsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  optional string user_token = 3; // Optional token for authenticated access to private posts
+  optional string course_id = 4;
+}
+
+// Response for listing posts
+message ListPostsResponse {
+  repeated Post posts = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+// Request to get a post by ID
+message GetPostRequest {
+  string post_id = 1;
+  optional string user_token = 2; // Optional token for authenticated access to private posts
+}
+
+// Response for getting a post
+message GetPostResponse {
+  Post post = 1;
+}
+
+// --- Notification Service Messages ---
+
+// Notification message definition
+message Notification {
+  string id = 1;
+  string title = 2;
+  string message = 3;
+  string user_id = 4;
+  string user_name = 5;
+  string course_id = 6;
+  string created_at = 7;
+  string updated_at = 8;
+}
+
+// Request to create a new notification
+message CreateNotificationRequest {
+  string title = 1;
+  string message = 2;
+  string user_token = 3;
+  string course_id = 4;
+}
+
+// Response for creating a new notification
+message CreateNotificationResponse {
+  Notification notification = 1;
+}
+
+// Request to update a notification
+message UpdateNotificationRequest {
+  string notification_id = 1;
+  string user_token = 2;
+  optional string title = 3;
+  optional string message = 4;
+  optional string course_id = 5;
+}
+
+// Response for updating a notification
+message UpdateNotificationResponse {
+  Notification notification = 1;
+}
+
+// Request to delete a notification
+message DeleteNotificationRequest {
+  string notification_id = 1;
+  string user_token = 2;
+}
+
+// Response for deleting a notification
+message DeleteNotificationResponse {}
+
+// Request to list notifications
+message ListNotificationsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  optional string user_token = 3;
+  optional string course_id = 4;
+}
+
+// Response for listing notifications
+message ListNotificationsResponse {
+  repeated Notification notifications = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+// --- Comment Service Messages ---
+
+// Comment message definition
+message Comment {
+  string id = 1;
+  string post_id = 2; // ID of the post being commented on
+  string user_id = 3; // ID of the user who made the comment
+  string user_name = 4; // Name of the user who made the comment
+  string content = 5;
+  optional string parent_comment_id = 6; // For tree-like structure; if null, it's a top-level comment
+  string created_at = 7;
+  string updated_at = 8;
+}
+
+// Request to create a comment
+message CreateCommentRequest {
+  string post_id = 1; // Must be a post
+  string content = 2;
+  string user_token = 3;
+  optional string parent_comment_id = 4;
+}
+
+// Response for creating a comment
+message CreateCommentResponse {
+  Comment comment = 1;
+}
+
+// Request to update a comment
+message UpdateCommentRequest {
+  string comment_id = 1;
+  string user_token = 2;
+  string content = 3; // New content for the comment
+  // Only the author of the comment can update it
+}
+
+// Response for updating a comment
+message UpdateCommentResponse {
+  Comment comment = 1;
+}
+
+// Request to delete a comment
+message DeleteCommentRequest {
+  string comment_id = 1;
+  string user_token = 2;
+}
+
+// Response for deleting a comment
+message DeleteCommentResponse {}
+
+// Request to list comments for a post
+message ListCommentsRequest {
+  string post_id = 1;
+  string user_token = 2;
+  int32 page_size = 3;
+  string page_token = 4;
+  optional string parent_comment_id = 5; // If provided, lists replies to this comment. If null, lists top-level comments.
+}
+
+// Response for listing comments
+message ListCommentsResponse {
+  string next_page_token = 1;
+  int32 total_count = 2;
+  repeated Comment comments = 3;
+}
+
+// --- Resource Service Messages ---
+
+// Resource message definition
+message Resource {
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  string url = 4;
+  string created_by = 5;
+  string creator_name = 6;
+  string created_at = 7;
+  string updated_at = 8;
+}
+
+// Request to create a new resource
+message CreateResourceRequest {
+  string title = 1;
+  string description = 2;
+  string url = 3;
+  string user_token = 4;
+}
+
+// Response for creating a new resource
+message CreateResourceResponse {
+  Resource resource = 1;
+}
+
+// Request to update a resource
+message UpdateResourceRequest {
+  string resource_id = 1;
+  string user_token = 2;
+  optional string title = 3;
+  optional string description = 4;
+  optional string url = 5;
+}
+
+// Response for updating a resource
+message UpdateResourceResponse {
+  Resource resource = 1;
+}
+
+// Request to delete a resource
+message DeleteResourceRequest {
+  string resource_id = 1;
+  string user_token = 2;
+}
+
+// Response for deleting a resource
+message DeleteResourceResponse {}
+
+// Request to list resources
+message ListResourcesRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  optional string user_token = 3; // Optional token for authenticated access
+}
+
+// Response for listing resources
+message ListResourcesResponse {
+  repeated Resource resources = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+// Request to get a resource by ID
+message GetResourceRequest {
+  string resource_id = 1;
+  optional string user_token = 2; // Optional token for authenticated access
+}
+
+// Response for getting a resource
+message GetResourceResponse {
+  Resource resource = 1;
+}

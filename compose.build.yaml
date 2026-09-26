@@ -1,0 +1,27 @@
+version: "3.8"
+services:
+  leaner-be:
+    image: ${LEANER_BE_IMAGE:-leaner/leaner-be:latest}
+    build:
+      context: ./leaner-be
+      dockerfile: Dockerfile
+      target: production
+
+  leaner-fe:
+    image: ${LEANER_FE_IMAGE:-leaner/leaner-fe:latest}
+    build:
+      context: ./leaner-fe
+      dockerfile: Dockerfile
+      target: runner
+
+  verifier:
+    image: ${VERIFIER_IMAGE:-leaner/verifier:latest}
+    build:
+      context: ./verifier
+      dockerfile: Dockerfile
+      target: production
+      args:
+        LEAN_VERSION: ${LEAN_VERSION:-v4.22.0}
+        MATHLIB4_VERSION: ${MATHLIB4_VERSION:-v4.22.0}
+        MATHLIB4_RETRY_COUNT: ${MATHLIB4_RETRY_COUNT:-5}
+        MATHLIB4_RETRY_DELAY_SECONDS: ${MATHLIB4_RETRY_DELAY_SECONDS:-10}

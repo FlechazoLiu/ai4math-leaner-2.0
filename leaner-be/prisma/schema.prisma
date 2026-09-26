@@ -1,0 +1,311 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider             = "prisma-client-py"
+  recursive_type_depth = -1
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  ASSISTANT
+  STUDENT
+}
+
+model Course {
+  id                 String               @id @default(uuid())
+  title              String
+  description        String
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  CourseEnrollment   CourseEnrollment[]
+  CourseTeaching     CourseTeaching[]
+  Assignment         Assignment[]
+  Notification       Notification[]
+  Post               Post[]
+  AssignmentQuestion AssignmentQuestion[]
+  CourseAssistant    CourseAssistant[]
+  EnrollmentRequest  EnrollmentRequest[]
+}
+
+model User {
+  id                 String              @id @default(uuid())
+  email              String?             @unique
+  password           String
+  username           String              @unique
+  studentId          String?             @unique
+  displayName        String?
+  mustChangePassword Boolean             @default(true)
+  role               Role                @default(STUDENT)
+  token              String              @unique @default(uuid())
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  Question          Question[]          @relation("AuthoredQuestions")
+  Answer            Answer[]            @relation("SubmittedAnswers")
+  Grading           Grading[]           @relation("GradedByRelations")
+  Posts             Post[]              @relation("AuthoredPosts")
+  Comments          Comment[]
+  courseId          String?
+  CourseEnrollment  CourseEnrollment[]
+  CourseTeaching    CourseTeaching[]
+  Notification      Notification[]
+  AssignmentAnswer  AssignmentAnswer[]
+  AssignmentGrade   AssignmentGrade[]
+  CourseAssistant   CourseAssistant[]
+  EnrollmentRequest EnrollmentRequest[]
+  CreatedResources  Resource[]       @relation("CreatedResources")
+}
+
+model CourseEnrollment {
+  userId   String
+  courseId String
+  user     User   @relation(fields: [userId], references: [id])
+  course   Course @relation(fields: [courseId], references: [id])
+
+  @@id([userId, courseId])
+  @@map("course_enrollments")
+}
+
+model CourseTeaching {
+  userId   String
+  courseId String
+  user     User   @relation(fields: [userId], references: [id])
+  course   Course @relation(fields: [courseId], references: [id])
+
+  @@id([userId, courseId])
+  @@map("course_teachings")
+}
+
+model CourseAssistant {
+  userId   String
+  courseId String
+  user     User   @relation(fields: [userId], references: [id])
+  course   Course @relation(fields: [courseId], references: [id])
+
+  @@id([userId, courseId])
+  @@map("course_assistants")
+}
+
+enum EnrollmentRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model EnrollmentRequest {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id])
+  message   String?
+  status    EnrollmentRequestStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AssignmentQuestion {
+  id                  String             @id @default(uuid())
+  courseId            String
+  course              Course             @relation(fields: [courseId], references: [id])
+  title               String
+  informalDescription String             @map("informal_description")
+  formalDescription   String?            @map("formal_description")
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  assignmentId        String?
+  Assignment          Assignment?        @relation(fields: [assignmentId], references: [id])
+  AssignmentAnswer    AssignmentAnswer[]
+
+  @@map("assignment_questions")
+}
+
+model Assignment {
+  id                 String               @id @default(uuid())
+  courseId           String
+  course             Course               @relation(fields: [courseId], references: [id])
+  title              String
+  description        String?
+  isDraft            Boolean              @default(false)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  AssignmentQuestion AssignmentQuestion[]
+}
+
+model AssignmentAnswer {
+  id                   String                   @id @default(uuid())
+  assignmentQuestionId String
+  assignmentQuestion   AssignmentQuestion       @relation(fields: [assignmentQuestionId], references: [id])
+  informalAnswer       String
+  formalAnswer         String?
+  verificationStatus   AnswerVerificationStatus
+  isDraft              Boolean
+  authorId             String
+  author               User                     @relation(fields: [authorId], references: [id])
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+  AssignmentGrade      AssignmentGrade[]
+
+  @@map("assignment_answers")
+}
+
+model AssignmentGrade {
+  id                 String           @id @default(uuid())
+  assignmentAnswerId String
+  assignmentAnswer   AssignmentAnswer @relation(fields: [assignmentAnswerId], references: [id])
+  grade              Int
+  gradedByUserId     String
+  gradedByUser       User             @relation(fields: [gradedByUserId], references: [id])
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@map("assignment_grades")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  message   String
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("notifications")
+}
+
+
+// New Enums from gRPC definitions
+enum MathDifficulty {
+  SIMP
+  EASY
+  MEDIUM
+  HARD
+  SORRY
+  // UNSPECIFIED is usually handled by making the field optional or having a default
+}
+
+enum LeanDifficulty {
+  SIMP
+  EASY
+  MEDIUM
+  HARD
+  SORRY
+  // UNSPECIFIED is usually handled by making the field optional or having a default
+}
+
+enum AnswerVerificationStatus {
+  PENDING
+  SUCCESSFUL
+  FAILED
+  NOT_APPLICABLE // Default for answers without formal content or not yet processed
+  // UNSPECIFIED is usually handled by making the field optional or having a default
+}
+
+model Tag {
+  id        String        @id @default(uuid())
+  name      String        @unique
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  questions QuestionTag[] // Relation to the join table
+}
+
+model Question {
+  id                  String         @id @default(uuid())
+  title               String
+  informalDescription String         @map("informal_description")
+  formalDescription   String?        @map("formal_description")
+  mathDifficulty      MathDifficulty @map("math_difficulty")
+  leanDifficulty      LeanDifficulty @map("lean_difficulty")
+  authorId            String         @map("author_id")
+  author              User           @relation("AuthoredQuestions", fields: [authorId], references: [id])
+  createdAt           DateTime       @default(now()) @map("created_at")
+  updatedAt           DateTime       @updatedAt @map("updated_at")
+  tags                QuestionTag[] // Relation to the join table
+  answers             Answer[] // Relation to answers for this question
+}
+
+// Join table for many-to-many relationship between Question and Tag
+model QuestionTag {
+  questionId String   @map("question_id")
+  tagId      String   @map("tag_id")
+  question   Question @relation(fields: [questionId], references: [id])
+  tag        Tag      @relation(fields: [tagId], references: [id])
+  assignedAt DateTime @default(now())
+
+  @@id([questionId, tagId])
+  @@map("question_tags")
+}
+
+model Answer {
+  id                    String                   @id @default(uuid())
+  questionId            String                   @map("question_id")
+  question              Question                 @relation(fields: [questionId], references: [id])
+  userId                String                   @map("user_id")
+  user                  User                     @relation("SubmittedAnswers", fields: [userId], references: [id])
+  informalAnswerContent String?                  @map("informal_answer_content")
+  formalAnswerContent   String?                  @map("formal_answer_content")
+  verificationStatus    AnswerVerificationStatus @default(NOT_APPLICABLE) @map("verification_status")
+  isDraft               Boolean                  @default(false) @map("is_draft")
+  createdAt             DateTime                 @default(now()) @map("created_at")
+  updatedAt             DateTime                 @updatedAt @map("updated_at")
+  grading               Grading? // One-to-one relation with Grading
+}
+
+model Grading {
+  id             String   @id @default(uuid())
+  answerId       String   @unique @map("answer_id") // Each answer has at most one grading
+  answer         Answer   @relation(fields: [answerId], references: [id])
+  gradedByUserId String   @map("graded_by_user_id")
+  gradedByUser   User     @relation("GradedByRelations", fields: [gradedByUserId], references: [id])
+  score          Int
+  feedbackText   String   @map("feedback_text")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+}
+
+model Post {
+  id        String    @id @default(uuid())
+  title     String
+  content   String
+  userId    String    @map("user_id")
+  user      User      @relation("AuthoredPosts", fields: [userId], references: [id])
+  courseId  String    @map("course_id")
+  course    Course    @relation(fields: [courseId], references: [id])
+  isDraft   Boolean   @default(false) @map("is_draft")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  Comment   Comment[]
+}
+
+model Comment {
+  id              String    @id @default(uuid())
+  postId          String    @map("post_id")
+  userId          String    @map("user_id")
+  content         String
+  parentCommentId String?   @map("parent_comment_id")
+  parentComment   Comment?  @relation("Replies", fields: [parentCommentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies         Comment[] @relation("Replies")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  user            User      @relation(fields: [userId], references: [id])
+  post            Post      @relation(fields: [postId], references: [id])
+}
+
+model Resource {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  url         String
+  createdBy   String   @map("created_by")
+  creator     User     @relation("CreatedResources", fields: [createdBy], references: [id])
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("resources")
+}
