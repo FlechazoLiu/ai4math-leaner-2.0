@@ -1,27 +1,28 @@
+name: Lint
+
 on:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
-    branches: [master]
+    branches: [main]
+
+permissions:
+  contents: read
+
 jobs:
-  build:
-    permissions:
-        contents: read
-        pages: write
-        id-token: write
+  lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: DeterminateSystems/nix-installer-action@main
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          lfs: true
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v23
         with:
           extra-conf: |
             accept-flake-config = true
-      - uses: DeterminateSystems/flake-checker-action@main
-      - name: Checkout Project
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 2
-          lfs: true
-      - run: |
-          nix develop --command make fmt
-      - run: |
-          nix develop --command make lint
+
+      - name: Run linters
+        run: nix develop --command make lint
