@@ -1,52 +1,182 @@
-# Leaner (AI4Math Leaner 2.0)
+<div align="center">
 
-Leaner 是一个基于 Lean 4 定理证明器的现代化互动式数学/逻辑编程学习平台。通过提供完整的课程生态、习题系统、以及面向公式和定理证明的自动验证环境，协助学生、助教和教师高效进行基于 Lean 4 的数学教学和评估。
+**English** | [简体中文](README.zh-CN.md)
 
-## 🏗️ 架构概览 (Architecture)
+<img src="assets/logo.svg" width="110" alt="Leaner logo" />
 
-系统采用**微服务与前后端分离**架构，各核心服务通过 Docker Compose 进行容器化编排并独立部署：
+# Leaner
 
-1. **Frontend (`leaner-fe`)**: 客户端与用户交互层，高度依赖服务端渲染 (SSR)。前端直接与 Backend 进行 RPC 交互。
-2. **Backend (`leaner-be`)**: 核心业务处理层，提供高效的数据调度功能。采用并实现 gRPC (Protocol Buffers) 与前端进行严谨的 API 强类型契约通信，同时向后直连 PostgreSQL 数据库。
-3. **Verifier (`verifier`)**: 专属的高性能核心算力节点（独立微服务）。接收后端发来的验证请求，在后端维持着数个独立的常驻 Lean REPL 服务器环境池解决极高的 Lean 初始化开销，负责即时验证用户的 Lean 4 证明代码运行结果。
-4. **Database (`pg`)**: PostgreSQL 17 用于集中式存储用户的课程记录、社交评论以及作业状态，通过 Prisma ORM 进行建模与操控。
+**An interactive learning platform for Lean 4 theorem proving — write proofs, get instant verification, and let AI suggest the next lemma.**
 
-## 🛠️ 技术栈 (Tech Stack)
+[![Lint](https://github.com/FlechazoLiu/ai4math-leaner-2.0/actions/workflows/lint.yaml/badge.svg)](https://github.com/FlechazoLiu/ai4math-leaner-2.0/actions/workflows/lint.yaml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![Lean 4](https://img.shields.io/badge/Lean-4.22.0-blueviolet)](https://lean-lang.org/)
+[![Mathlib](https://img.shields.io/badge/Mathlib-v4.22.0-blue)](https://github.com/leanprover-community/mathlib4)
+[![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/)
+[![Python](https://img.shields.io/badge/Python-3.13-3776ab)](https://www.python.org/)
 
-### 前端生态层 (`leaner-fe`)
-- **核心框架**: **Next.js 15.3** (借助 Turbopack 加速) 与 **React 19** 驱动前端界面。
-- **协议与通信**: 采用 `@connectrpc/connect` 和 `@bufbuild/protobuf` 进行面向 gRPC 的客户端通信。
-- **UI & 样式**: 基于 **Tailwind CSS v4** 进行样式管控，辅以 **Radix UI** 无头组件库 (Headless UI) 和 **Lucide React** 图标库构成底层组件逻辑。
-- **内容渲染**: 引入 **KaTeX** 和 `remark-math` 组合用于高保真数学公式渲染，依赖 **Shiki** 用于强大的 Lean 4 代码语法高亮。
-- **状态与认证**: 使用 **next-auth (Beta)** 进行会话认证以及 **SWR** 用于客户端数据获取，引入 **Zod** 处理表单 Schema 验证。
+[Features](#-features) · [Screenshots](#-screenshots) · [Architecture](#%EF%B8%8F-architecture) · [Quick Start](#-quick-start) · [Documentation](#-documentation) · [Roadmap](#%EF%B8%8F-roadmap)
 
-### 后端业务节点 (`leaner-be`)
-- **核心框架**: 基于 **Python 3.13** 搭建底层数据底座。
-- **API 通信/契约 (Proto Contracts)**: 摒弃了传统的 RESTful API，全面采用 **gRPC (`grpcio` / `protobuf`)** 开发通信端点 (`leaner.v1`)。
-- **数据库 ORM**: 引入 **Prisma Python** (基于跨语言 Prisma) 管理数据库结构迁移及类型安全的 CRUD 查询操作。
-- **异步控制**: 利用 `aiohttp` 与 `asyncio` 管理异步依赖及与 Verifier 节点的通讯任务。
+<img src="docs/images/playground.png" alt="Leaner Playground: Lean 4 code in a Monaco editor with live proof state and AI lemma suggestions" width="880" />
 
-### 验证器计算节点 (`verifier`)
-- **HTTP 接口层**: 采用 **FastAPI** 和 **Uvicorn** 轻量且快速地拉起内部评测接口（仅开放给后端通讯使用）。
-- **进程管理**: 巧妙利用 Python 原生 `multiprocessing` 模块派发基于 `lean-interact` 的内部服务器 worker (LeanServerWorker)。它会对 `LeanREPL` 资源进行池化常驻管理，避免每次验证产生庞大的 Lean 4 冷启动编译耗时。
+*The Playground: a scratchpad with live verification, proof-state inspection, and Smart Assist panels.*
 
-## ✨ 核心业务功能与能力 (Capabilities)
+</div>
 
-*   🔑 **多角色与权限体系 (Role-Based Access Control)**
-    基于管理员、教师、助教和学生四种角色权限树。不同角色享有不同的数据边界操作权限（如学生申请入课，教师与助教进行课程维护与审批）。
-*   📚 **完善的课程和作业生命周期 (Course & Assignment Ecosystem)**
-    拥有涵盖完整的课程体系、课程内的作业以及题目定制特性。针对证明题目，设计了自然语言描述与形式化定义双重声明结构。
-*   🤖 **Lean 4 代码实时编写与验证 (Live Evaluation)**
-    学生端作业/解答分为草稿和提交态。系统会将形式化代码传递给 Verifier 核心组件运行并实时返回验证状态，允许平台针对代码结果（如 Sorry、Failed 或 Verified）进行自动化评级或提供即时学习反馈。
-*   💬 **社交化讨论与通知 (Community & Notification)**
-    附带内部论坛讨论以及讨论树评论，配发全站内部消息信箱/横幅确保通知触达。并内建了对各种上传外部资源引用的支持。
-*   📊 **评测数据管理 (Grading)**
-    拥有显式的评级/打分映射表记录体系，供教师及助教管理系统内的答卷成绩并在前端页面直接浏览。
+---
 
-## 🚀 快速启动指南
+## Why Leaner?
 
-请参考项目根目录下的 `docs/setup.md` 文件了解完整的开发环境配置和部署细节。
+Teaching Lean 4 means wrestling with two things at once: the **mathematics** and the **toolchain**. Leaner removes the second problem. Students open a browser and get a full Lean 4 + [Mathlib](https://github.com/leanprover-community/mathlib4) environment with instant feedback; teachers get courses, assignments, automatic verification, and a grading workbench — all in one self-hostable platform.
+
+Leaner is built for real classrooms and is developed and deployed in collaboration with the **AI4Math** initiatives at **Renmin University of China (RUC)** and **Peking University (PKU)**.
+
+## ✨ Features
+
+- 🔐 **Roles & permissions** — Admin, Teacher, Assistant, and Student roles with enrollment approval, per-course data boundaries, and self-service course discovery.
+- 📚 **Courses & assignments** — A full course → assignment → question lifecycle. Each exercise carries both a natural-language statement (rendered with KaTeX) and its formal Lean 4 definition.
+- ⚡ **Live Lean verification** — Proof code is checked by a pooled [lean-interact](https://github.com/leanDojo/lean-interact) REPL service, so students see `Verified` / `Sorry` / `Failed` states in seconds instead of waiting for a cold Mathlib build.
+- 🧭 **Immersive answer editor** — A distraction-free [Monaco](https://microsoft.github.io/monaco-editor/) editor per question with autosaved drafts, draft restore, and separate formal (Lean) and informal (written) answers.
+- 🤖 **Smart Assist** — Two AI research services, integrated side-by-side:
+  - **Theorem Search** — search Mathlib theorems by natural-language description, powered by [LeanSearch](https://leansearch.net) (PKU AI4Math).
+  - **In-State** — lemma recommendations from the *current proof state*, powered by [premise-search](https://premise-search.com) (RUC AI4Math).
+- 🎮 **Playground** — A persistent scratchpad for experimenting with proofs, inspecting goal states, and trying out lemmas before an assignment.
+- 📖 **Course resources** — Upload and share course materials; discussions support resource references.
+- ✅ **Grading workbench** — A review queue for teachers/TAs with the student's code, verification status, score entry, and feedback, plus a per-course gradebook.
+- 💬 **Discussions & notifications** — Threaded comments under questions and an in-app inbox to keep everyone in the loop.
+
+## 📸 Screenshots
+
+| | |
+|---|---|
+| ![Immersive answer editor](docs/images/answer-editor.png) | ![In-State lemma recommendations](docs/images/instate.png) |
+| **Answer editor** — full-screen editing with live verification | **In-State** — lemmas suggested from the current proof state |
+| ![Theorem Search](docs/images/theorem-search.png) | ![Grading workbench](docs/images/review.png) |
+| **Theorem Search** — find Mathlib lemmas in natural language | **Grading** — review submissions and give feedback |
+| ![Gradebook](docs/images/gradebook.png) | ![Student dashboard](docs/images/dashboard.png) |
+| **Gradebook** — scores across a course | **Dashboard** — courses, assignments, and progress at a glance |
+
+## 🏗️ Architecture
+
+Four services, orchestrated by Docker Compose:
+
+```mermaid
+graph LR
+    U["🧑‍🎓 Students · 👩‍🏫 Teachers · TAs"] --> FE
+
+    FE["<b>leaner-fe</b><br/>Next.js 15 · React 19<br/>Monaco · Connect-RPC"]
+    BE["<b>leaner-be</b><br/>Python 3.13 · grpc.aio<br/>Prisma"]
+    VF["<b>verifier</b><br/>FastAPI · lean-interact<br/>REPL worker pool"]
+    PG[("PostgreSQL 17")]
+    LS["LeanSearch<br/>(leansearch.net)"]
+    PS["premise-search<br/>(premise-search.com)"]
+
+    FE -- "Connect-RPC · <code>leaner.v1</code>" --> BE
+    BE -- "Prisma ORM" --> PG
+    BE -- "HTTP verify" --> VF
+    FE -- "Smart Assist proxy" --> LS
+    FE -- "Smart Assist proxy" --> PS
+
+    style FE fill:#1d4ed8,color:#fff,stroke:#1e3a8a
+    style BE fill:#4338ca,color:#fff,stroke:#312e81
+    style VF fill:#5b21b6,color:#fff,stroke:#4c1d95
+    style PG fill:#0f766e,color:#fff,stroke:#134e4a
+```
+
+- **leaner-fe** (`:3000`) — server-rendered UI. Talks to the backend through typed Connect-RPC calls generated from the same Protobuf contracts.
+- **leaner-be** (`:7720`) — all business logic behind gRPC services (`leaner.v1`), with PostgreSQL access via Prisma.
+- **verifier** (`:8030`) — keeps resident Lean REPL workers alive (backed by `lean-interact`) so each verification skips Lean's cold-start; only reachable from the backend.
+- **pg** — PostgreSQL 17 for users, courses, submissions, grades, and discussions.
+
+## 🚀 Quick Start
+
+> **Prerequisites**: Docker + Docker Compose, and [GNU Make](https://www.gnu.org/software/make/). For a native dev setup (Nix, pnpm, uv), see [docs/setup.md](docs/setup.md).
+
+```bash
+git clone https://github.com/FlechazoLiu/ai4math-leaner-2.0.git
+cd ai4math-leaner-2.0
+
+cp .env.example .env
+# Edit .env: set POSTGRES_PASSWORD, AUTH_SECRET, and INITIAL_ADMIN_*
+
+make init-services   # start PostgreSQL + backend + frontend
+make up-verifier     # start the Lean verifier (see note below)
+```
+
+Then open **http://localhost:3000** and sign in with the `INITIAL_ADMIN_EMAIL` / `INITIAL_ADMIN_PASSWORD` you configured.
+
+> **Verifier note** — the verifier runs its own Lean 4 + Mathlib environment and needs roughly **8 GB of RAM**. On smaller machines set `ENABLE_VERIFIER_PROFILE=false` and run the verifier elsewhere (see [docs/DEVOPS_GUIDE.md](docs/DEVOPS_GUIDE.md)). The first start downloads Mathlib artifacts and can take a while.
+
+<details>
+<summary><b>Configuration reference</b> (key variables in <code>.env</code>)</summary>
+
+| Variable | Default | Description |
+|---|---|---|
+| `POSTGRES_PASSWORD` | — | Database password (**required**) |
+| `AUTH_SECRET` | — | NextAuth session secret (**required**) |
+| `NEXTAUTH_URL` | `http://localhost:3000` | Public URL of the frontend |
+| `INITIAL_ADMIN_EMAIL` / `INITIAL_ADMIN_USERNAME` / `INITIAL_ADMIN_PASSWORD` | — | Bootstrap admin account created on first run |
+| `LEAN_VERSION` / `MATHLIB4_VERSION` | `v4.22.0` | Lean and Mathlib versions used by the verifier |
+| `WORKERS` | `1` | Number of resident Lean REPL workers |
+| `REPO_URL_OR_PATH` | `/opt/mathlib4` | Mathlib checkout (URL or local path) used by the verifier |
+| `ENABLE_VERIFIER_PROFILE` | `false` | Enable the verifier profile (recommended on 8 GB+ hosts) |
+| `VERIFIER_MEM_LIMIT` / `VERIFIER_MEMSWAP_LIMIT` | `2g` / `4g` | Memory caps for the verifier container |
+| `PG_IMAGE`, `LEANER_BE_IMAGE`, `LEANER_FE_IMAGE`, `VERIFIER_IMAGE` | `leaner/*` | Image tags (used for offline deployment) |
+
+</details>
+
+### 📦 Offline / air-gapped deployment
+
+Build images with `make build-images`, transfer with `make export-images` / `make load-images`, and follow [docs/DEVOPS_GUIDE.md](docs/DEVOPS_GUIDE.md) — the guide covers the full on-server workflow including a 2 GB low-memory mode.
+
+## 📚 Documentation
+
+| Document | Description |
+|---|---|
+| [docs/setup.md](docs/setup.md) | Development environment (Compose or native dev loop) |
+| [docs/DEVOPS_GUIDE.md](docs/DEVOPS_GUIDE.md) ([中文](docs/DEVOPS_GUIDE_ZH.md)) | Deployment, upgrades, backup, troubleshooting |
+| [docs/STUDENT_GUIDE.md](docs/STUDENT_GUIDE.md) ([中文](docs/STUDENT_GUIDE_ZH.md)) | Student walkthrough: courses, assignments, submitting proofs |
+| [docs/TA_GUIDE.md](docs/TA_GUIDE.md) ([中文](docs/TA_GUIDE_ZH.md)) | Teacher/TA walkthrough: grading, course management |
+| [docs/SAMPLE_ASSIGNMENT.md](docs/SAMPLE_ASSIGNMENT.md) ([中文](docs/SAMPLE_ASSIGNMENT_ZH.md)) | Authoring an assignment end to end |
+| [docs/feature_design.md](docs/feature_design.md) | Design notes ([PDF](docs/feature_design.pdf)) |
+| [docs/website_design.md](docs/website_design.md) | Product design and roadmap notes |
+| [USER_GUIDE.md](USER_GUIDE.md) | Quick end-user guide |
+
+## 🗺️ Roadmap
+
+- [ ] Multi-file playground workspaces and richer project scaffolds
+- [ ] Friendlier diagnostics — localized, beginner-oriented Lean error explanations
+- [ ] Proof similarity / plagiarism detection across submissions
+- [ ] Gradebook analytics (difficulty, common failure points, cohort progress)
+- [ ] Scale-out web IDE capabilities (collaboration, larger projects)
+
+Ideas and contributions are welcome — see [Contributing](#-contributing).
+
+## 🤝 Contributing
+
+Issues and pull requests are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for the development setup (`nix develop`, `make fmt / lint / proto`), commit conventions, and the PR workflow.
+
+## 🔒 Security
+
+Found a vulnerability? Please report it privately via [GitHub security advisories](https://github.com/FlechazoLiu/ai4math-leaner-2.0/security/advisories/new) — see [SECURITY.md](SECURITY.md).
 
 ## 📄 License
 
-本项目基于 [MIT License](LICENSE) 开源。
+Released under the [MIT License](LICENSE).
+
+## 🙏 Acknowledgments
+
+- [LeanSearch](https://leansearch.net) — theorem search by **PKU AI4Math**, powering our Theorem Search panel
+- [premise-search](https://premise-search.com) — premise selection by **RUC AI4Math**, powering our In-State panel
+- [lean-interact](https://github.com/leanDojo/lean-interact) — the Lean 4 REPL toolchain behind our verifier
+- [Mathlib](https://github.com/leanprover-community/mathlib4) and the Lean community for the incredible ecosystem
+- Built with [Next.js](https://nextjs.org/), [Prisma](https://www.prisma.io/), [FastAPI](https://fastapi.tiangolo.com/), [Monaco Editor](https://microsoft.github.io/monaco-editor/), and [Connect-RPC](https://connectrpc.com/)
+
+---
+
+<div align="center">
+
+<sub>Built with ❤️ for the Lean teaching community · 中文文档请见 <a href="README.zh-CN.md">README.zh-CN.md</a></sub>
+
+</div>

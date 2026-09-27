@@ -64,7 +64,15 @@ This guide will help you set up the development environment for the Leaner proje
    ```bash
    make init-services
    ```
-   This will start all services defined in `compose.yaml` (`pg`, `leaner-be`, `leaner-fe`, `verifier`) using local images.
+   This will start `pg`, `leaner-be`, and `leaner-fe` using local images. The
+   `verifier` runs behind the `verifier` Compose profile — start it separately:
+   ```bash
+   make up-verifier
+   ```
+   The verifier maintains its own Lean 4 + Mathlib environment and needs roughly
+   8 GB of RAM; on low-memory machines set `ENABLE_VERIFIER_PROFILE=false` (the
+   verifier service is then skipped entirely). See
+   [DEVOPS_GUIDE.md](DEVOPS_GUIDE.md) for details.
 
 3. **Generate Protocol Buffers**
    ```bash
