@@ -189,7 +189,7 @@ class AssignmentAnswerService(leaner_pb2_grpc.AssignmentAnswerServiceServicer):
         # Verify answer exists
         answer = await self.prisma.assignmentanswer.find_unique(
             where={"id": request.answer_id},
-            include={"assignmentQuestion": True, "AssignmentGrade": True, "author": True, "assignmentQuestion": True, "author": True},
+            include={"assignmentQuestion": True, "AssignmentGrade": True, "author": True},
         )
         if not answer:
             await context.abort(
@@ -351,7 +351,7 @@ class AssignmentAnswerService(leaner_pb2_grpc.AssignmentAnswerServiceServicer):
         # Verify answer exists
         answer = await self.prisma.assignmentanswer.find_unique(
             where={"id": request.answer_id},
-            include={"assignmentQuestion": True, "AssignmentGrade": True, "author": True, "assignmentQuestion": True, "author": True},
+            include={"assignmentQuestion": True, "AssignmentGrade": True, "author": True},
         )
         if not answer:
             await context.abort(
@@ -395,7 +395,7 @@ class AssignmentAnswerService(leaner_pb2_grpc.AssignmentAnswerServiceServicer):
         # Verify answer exists
         answer = await self.prisma.assignmentanswer.find_unique(
             where={"id": request.answer_id},
-            include={"assignmentQuestion": True, "AssignmentGrade": True, "author": True, "assignmentQuestion": True, "author": True},
+            include={"assignmentQuestion": True, "AssignmentGrade": True, "author": True},
         )
         if not answer:
             await context.abort(
